@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HealthAI SaaS — Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#1a5f7a;--blue-dark:#0f3d52;--blue-light:#e8f4f8;
+  --teal:#57c5b6;--teal-light:#e0f5f2;
+  --text:#1e293b;--muted:#64748b;--border:#e2e8f0;
+  --bg:#f8fafb;--white:#fff;--green:#22c55e;--red:#ef4444;
+  --shadow:0 2px 12px rgba(26,95,122,.1);
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* TOP BAR */
+.topbar{background:var(--blue-dark);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-logo{color:#fff;font-family:'Playfair Display',serif;font-size:17px;display:flex;align-items:center;gap:8px}
+.v-badge{font-size:10px;background:rgba(87,197,182,.3);color:#57c5b6;padding:2px 8px;border-radius:10px;font-family:Inter;font-weight:600}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.cfg-label{color:rgba(255,255,255,.5);font-size:12px}
+.cfg-input{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;outline:none}
+.cfg-input::placeholder{color:rgba(255,255,255,.4)}
+#s-pill{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;display:flex;align-items:center;gap:5px}
+#s-pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+#s-pill.online{background:#d1fae5;color:#065f46}
+#s-pill.offline{background:#fee2e2;color:#991b1b}
+#s-pill.checking{background:#fef3c7;color:#92400e}
+
+/* CLIENT SELECTOR */
+.client-bar{background:var(--white);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:10px;flex-shrink:0;overflow-x:auto}
+.client-bar::-webkit-scrollbar{height:3px}
+.client-bar::-webkit-scrollbar-thumb{background:var(--border)}
+.client-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);white-space:nowrap;margin-right:4px}
+.c-btn{padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;transition:all .15s;font-family:inherit;display:flex;align-items:center;gap:6px}
+.c-btn:hover{border-color:var(--blue);color:var(--blue)}
+.c-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.c-type{font-size:10px;opacity:.7}
+
+/* MAIN LAYOUT */
+.main{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:240px;background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+.sb-section{padding:14px 16px;border-bottom:1px solid var(--border)}
+.sb-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
+.ch-btn{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--white);cursor:pointer;display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;color:var(--text);margin-bottom:5px;transition:all .15s;text-align:left;font-family:inherit}
+.ch-btn:hover{background:var(--blue-light);border-color:var(--blue)}
+.ch-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.ch-icon{font-size:14px;width:18px;text-align:center}
+.ch-badge{margin-left:auto;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;background:var(--teal-light);color:var(--blue)}
+.ch-btn.active .ch-badge{background:rgba(255,255,255,.2);color:#fff}
+
+.sb-scroll{flex:1;overflow-y:auto}
+.sb-scroll::-webkit-scrollbar{width:3px}
+.sb-scroll::-webkit-scrollbar-thumb{background:var(--border)}
+.mem-block{padding:12px 16px;border-bottom:1px solid var(--border)}
+.mem-row{display:flex;justify-content:space-between;margin-bottom:4px}
+.mem-k{font-size:11px;color:var(--muted)}
+.mem-v{font-size:11px;font-weight:500;max-width:110px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap}
+.mem-v.empty{color:var(--border)}
+.mem-v.set{color:var(--blue)}
+.act-block{padding:12px 16px}
+.act-item{display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid var(--bg);font-size:11px;color:var(--muted)}
+.act-icon{width:18px;height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+.ic-search{background:#e0f2fe;color:#0369a1}.ic-email{background:#fce7f3;color:#9d174d}
+.ic-memory{background:#ede9fe;color:#5b21b6}.ic-booking{background:#d1fae5;color:#065f46}
+.ic-escalate{background:#fee2e2;color:#991b1b}.ic-task{background:#fef3c7;color:#92400e}
+.ic-info{background:#f1f5f9;color:#475569}
+
+/* CHAT */
+.chat-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.chat-hdr{padding:12px 20px;border-bottom:1px solid var(--border);background:var(--white);display:flex;align-items:center;gap:12px;flex-shrink:0}
+.hdr-av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--teal));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.hdr-name{font-weight:600;font-size:14px}
+.hdr-sub{font-size:11px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:5px}
+.online-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ch-tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:auto;background:var(--blue-light);color:var(--blue)}
+
+.messages{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:10px}
+.messages::-webkit-scrollbar{width:4px}
+.messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.mrow{display:flex;flex-direction:column;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.mrow.user{align-items:flex-end}
+.mrow.bot{align-items:flex-start}
+.bubble{max-width:80%;padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.55}
+.bubble.user{background:var(--blue);color:#fff;border-bottom-right-radius:4px}
+.bubble.bot{background:var(--white);border:1px solid var(--border);color:var(--text);border-bottom-left-radius:4px;box-shadow:var(--shadow)}
+.bubble a{color:inherit;text-decoration:underline}
+.bubble strong{font-weight:600}
+.tools-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.ttag{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--bg);border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;gap:3px}
+.typing-ind{display:flex;gap:4px;padding:11px 13px;background:var(--white);border:1px solid var(--border);border-radius:14px;border-bottom-left-radius:4px;align-self:flex-start;box-shadow:var(--shadow)}
+.typing-ind span{width:6px;height:6px;background:var(--blue);border-radius:50%;opacity:.3;animation:bob 1.2s infinite}
+.typing-ind span:nth-child(2){animation-delay:.2s}
+.typing-ind span:nth-child(3){animation-delay:.4s}
+@keyframes bob{0%,80%,100%{opacity:.2;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+.qreplies{padding:0 20px 10px;display:flex;flex-wrap:wrap;gap:6px}
+.qr{padding:6px 13px;border:1.5px solid var(--blue);color:var(--blue);background:transparent;border-radius:20px;font-size:12px;font-family:inherit;cursor:pointer;transition:all .15s;white-space:nowrap}
+.qr:hover{background:var(--blue);color:#fff}
+.gdpr{padding:5px 20px;background:var(--bg);border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center;flex-shrink:0}
+.gdpr a{color:var(--blue)}
+.input-bar{padding:12px 20px;border-top:1px solid var(--border);background:var(--white);display:flex;gap:10px;align-items:flex-end;flex-shrink:0}
+#msg-input{flex:1;border:1.5px solid var(--border);border-radius:22px;padding:10px 16px;font-size:14px;font-family:inherit;outline:none;resize:none;max-height:100px;overflow-y:auto;transition:border-color .2s;line-height:1.4;color:var(--text)}
+#msg-input:focus{border-color:var(--blue)}
+#msg-input::placeholder{color:var(--muted)}
+#send-btn{width:42px;height:42px;border-radius:50%;background:var(--blue);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s,transform .1s}
+#send-btn:hover{background:var(--blue-dark);transform:scale(1.05)}
+#send-btn:disabled{background:var(--border);cursor:not-allowed;transform:none}
+#send-btn svg{width:18px;height:18px;fill:#fff}
+
+/* VOICE */
+.voice-wrap{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f3d52,#1a5f7a);gap:16px;padding:24px;overflow:hidden;position:relative}
+.v-rings{position:relative;width:150px;height:150px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.v-ring{position:absolute;border-radius:50%;border:1.5px solid transparent;opacity:0}
+.v-r1{width:110px;height:110px}.v-r2{width:134px;height:134px}.v-r3{width:150px;height:150px}
+.v-rings.listening .v-ring{border-color:rgba(52,211,153,.55);animation:vrl 1.4s ease-out infinite}
+.v-rings.listening .v-r2{animation-delay:.25s}.v-rings.listening .v-r3{animation-delay:.5s}
+.v-rings.speaking .v-ring{border-color:rgba(96,165,250,.65);animation:vrs .85s ease-out infinite}
+.v-rings.speaking .v-r2{animation-delay:.2s}.v-rings.speaking .v-r3{animation-delay:.4s}
+.v-rings.thinking .v-ring{border-color:rgba(251,191,36,.45);animation:vrt 2s ease-in-out infinite}
+.v-rings.thinking .v-r2{animation-delay:.45s}.v-rings.thinking .v-r3{animation-delay:.9s}
+@keyframes vrl{0%{transform:scale(.82);opacity:1}100%{transform:scale(1.18);opacity:0}}
+@keyframes vrs{0%{transform:scale(.78);opacity:1}100%{transform:scale(1.22);opacity:0}}
+@keyframes vrt{0%,100%{transform:scale(.88);opacity:.25}50%{transform:scale(1.06);opacity:.85}}
+.v-avatar{width:86px;height:86px;border-radius:50%;background:linear-gradient(135deg,#1e3a5f,#2563a8);display:flex;align-items:center;justify-content:center;font-size:34px;border:2px solid rgba(255,255,255,.15);position:relative;z-index:2}
+.v-bars{display:flex;align-items:center;gap:3px;height:24px;opacity:0;transition:opacity .25s}
+.v-bars.on{opacity:1}
+.vb{width:3px;border-radius:2px;background:linear-gradient(to top,#3b82f6,#93c5fd)}
+.v-bars.on .vb{animation:vbw var(--s,.6s) ease-in-out infinite alternate}
+.vb:nth-child(1){height:7px;--s:.5s}.vb:nth-child(2){height:16px;--s:.7s;animation-delay:.08s}
+.vb:nth-child(3){height:22px;--s:.6s;animation-delay:.04s}.vb:nth-child(4){height:14px;--s:.8s;animation-delay:.12s}
+.vb:nth-child(5){height:20px;--s:.55s;animation-delay:.16s}.vb:nth-child(6){height:10px;--s:.75s;animation-delay:.06s}
+.vb:nth-child(7){height:18px;--s:.65s;animation-delay:.1s}
+@keyframes vbw{from{transform:scaleY(.25)}to{transform:scaleY(1)}}
+.v-name{color:#fff;font-size:20px;font-weight:500}
+.v-badge-st{font-size:12px;font-weight:500;padding:3px 14px;border-radius:20px;transition:all .3s}
+.v-badge-st.idle{background:rgba(255,255,255,.07);color:rgba(255,255,255,.4)}
+.v-badge-st.listening{background:rgba(52,211,153,.15);color:#34d399}
+.v-badge-st.thinking{background:rgba(251,191,36,.13);color:#fbbf24}
+.v-badge-st.speaking{background:rgba(96,165,250,.13);color:#60a5fa}
+.v-badge-st.error{background:rgba(239,68,68,.13);color:#f87171}
+.v-tx{width:100%;max-width:380px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:11px 15px;min-height:54px}
+.v-tx-who{font-size:10px;font-weight:600;letter-spacing:.05em;color:rgba(255,255,255,.25);text-transform:uppercase;margin-bottom:3px}
+.v-tx-text{font-size:13px;color:rgba(255,255,255,.75);line-height:1.55;min-height:18px}
+.v-tx-text.dim{color:rgba(255,255,255,.3);font-style:italic}
+.v-mic-btn{width:68px;height:68px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:26px;transition:transform .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent}
+.v-mic-btn.ready{background:linear-gradient(135deg,#1d4ed8,#3b82f6);box-shadow:0 4px 20px rgba(59,130,246,.45)}
+.v-mic-btn.ready:hover{transform:scale(1.07)}
+.v-mic-btn.ready:active{transform:scale(.95)}
+.v-mic-btn.active{background:linear-gradient(135deg,#b91c1c,#ef4444);box-shadow:0 4px 20px rgba(239,68,68,.55);animation:vmpulse 1.1s infinite}
+.v-mic-btn.busy{background:rgba(255,255,255,.1);cursor:not-allowed}
+@keyframes vmpulse{0%,100%{box-shadow:0 4px 20px rgba(239,68,68,.4)}50%{box-shadow:0 4px 34px rgba(239,68,68,.8)}}
+.v-mic-lbl{font-size:11px;color:rgba(255,255,255,.35);margin-top:4px}
+.v-hint{font-size:11px;color:rgba(255,255,255,.2);text-align:center}
+.v-perm{position:absolute;inset:0;background:rgba(10,20,36,.95);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:32px;text-align:center;z-index:10}
+.v-perm-btn{padding:10px 28px;background:var(--teal);color:#fff;border:none;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+
+@media(max-width:700px){.sidebar{display:none}.cfg-input{width:120px}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">🏥 HealthAI SaaS <span class="v-badge">v3.0</span></div>
+  <div class="topbar-right">
+    <span class="cfg-label">API:</span>
+    <input class="cfg-input" id="api-url" value="http://localhost:3000" style="width:180px"/>
+    <div id="s-pill" class="checking">Checking…</div>
+    <button onclick="checkHealth()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer">Recheck</button>
+  </div>
+</div>
+
+<!-- CLIENT SELECTOR -->
+<div class="client-bar">
+  <span class="client-label">Client:</span>
+  <button class="c-btn active" id="cbtn-brightsmile-dental" onclick="switchClient('brightsmile-dental','Aria','🦷','Bright Smile Dental','Dental Clinic')">
+    🦷 Bright Smile Dental <span class="c-type">Dental</span>
+  </button>
+  <button class="c-btn" id="cbtn-kensington-gp" onclick="switchClient('kensington-gp','Sophie','🏥','Kensington Family Practice','GP Surgery')">
+    🏥 Kensington GP <span class="c-type">GP Surgery</span>
+  </button>
+  <button class="c-btn" id="cbtn-london-private-hospital" onclick="switchClient('london-private-hospital','Victoria','🏨','London Private Hospital','Private Hospital')">
+    🏨 London Private Hospital <span class="c-type">Hospital</span>
+  </button>
+  <button class="c-btn" id="cbtn-custom" onclick="addCustomClient()" style="border-style:dashed;color:var(--muted)">
+    ➕ Add Client
+  </button>
+</div>
+
+<div class="main">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-section">
+      <div class="sb-label">Channels</div>
+      <button class="ch-btn active" id="btn-web" onclick="switchCh('web')">
+        <span class="ch-icon">🌐</span>Web Chat<span class="ch-badge">Live</span>
+      </button>
+      <button class="ch-btn" id="btn-voice" onclick="switchCh('voice')">
+        <span class="ch-icon">📞</span>Voice<span class="ch-badge">Live</span>
+      </button>
+    </div>
+    <div class="sb-scroll">
+      <div class="mem-block">
+        <div class="sb-label">🧠 Patient Memory</div>
+        <div class="mem-row"><span class="mem-k">Name</span><span class="mem-v empty" id="mm-name">—</span></div>
+        <div class="mem-row"><span class="mem-k">Phone</span><span class="mem-v empty" id="mm-phone">—</span></div>
+        <div class="mem-row"><span class="mem-k">Email</span><span class="mem-v empty" id="mm-email">—</span></div>
+        <div class="mem-row"><span class="mem-k">New patient</span><span class="mem-v empty" id="mm-new">—</span></div>
+        <div class="mem-row"><span class="mem-k">Concern</span><span class="mem-v empty" id="mm-concern">—</span></div>
+        <div class="mem-row"><span class="mem-k">Service</span><span class="mem-v empty" id="mm-service">—</span></div>
+      </div>
+      <div class="act-block">
+        <div class="sb-label">⚙️ Agent Activity</div>
+        <div id="act-log"><div class="act-item"><span class="act-icon ic-info">ℹ</span>Waiting…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEB CHAT -->
+  <div class="chat-area" id="view-web" style="display:flex">
+    <div class="chat-hdr">
+      <div class="hdr-av" id="hdr-av">💬</div>
+      <div>
+        <div class="hdr-name" id="hdr-name">Aria — Bright Smile Dental</div>
+        <div class="hdr-sub"><span class="online-dot"></span>AI Agent · Web search · Memory · Emails · Tasks</div>
+      </div>
+      <span class="ch-tag">🌐 Web</span>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="qreplies" id="qreplies">
+      <button class="qr" data-msg="I'd like to book an appointment">📅 Book appointment</button>
+      <button class="qr" data-msg="What are your opening hours today?">🕐 Opening hours</button>
+      <button class="qr" data-msg="What services do you offer?">💊 Services & prices</button>
+      <button class="qr" data-msg="Do you accept BUPA insurance?">💙 Insurance</button>
+      <button class="qr" data-msg="What does the NHS say about regular check-ups?">🔍 Search web</button>
+      <button class="qr" data-msg="I need to speak to a real person">👤 Human</button>
+    </div>
+    <div class="gdpr">No clinical advice · <a href="#">Privacy Policy</a> · Conversations expire after 60 mins</div>
+    <div class="input-bar">
+      <textarea id="msg-input" rows="1" placeholder="Type a message…" maxlength="1500"></textarea>
+      <button id="send-btn" disabled><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
+    </div>
+  </div>
+
+  <!-- VOICE -->
+  <div class="voice-wrap" id="view-voice">
+    <div class="v-perm" id="v-perm">
+      <div style="font-size:44px">🎤</div>
+      <div style="font-size:16px;font-weight:600;color:#fff">Allow Microphone</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.7">Click below then Allow in Chrome.<br/>Requires Google Chrome.</div>
+      <button class="v-perm-btn" onclick="vRequestMic()">Allow Microphone</button>
+    </div>
+    <div class="v-rings" id="v-rings">
+      <div class="v-ring v-r1"></div><div class="v-ring v-r2"></div><div class="v-ring v-r3"></div>
+      <div class="v-avatar" id="v-avatar">💬</div>
+    </div>
+    <div class="v-bars" id="v-bars">
+      <div class="vb"></div><div class="vb"></div><div class="vb"></div>
+      <div class="vb"></div><div class="vb"></div><div class="vb"></div><div class="vb"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:5px">
+      <div class="v-name" id="v-name">Aria</div>
+      <div class="v-badge-st idle" id="v-badge">Ready</div>
+    </div>
+    <div class="v-tx">
+      <div class="v-tx-who" id="v-tx-who">ARIA</div>
+      <div class="v-tx-text dim" id="v-tx-text">Tap the mic and speak…</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:5px">
+      <button class="v-mic-btn ready" id="v-mic-btn" onclick="vHandleMic()">🎤</button>
+      <div class="v-mic-lbl" id="v-mic-lbl">Tap to speak</div>
+    </div>
+    <div class="v-hint">Space = start/stop · Esc = cancel</div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const api = () => $("api-url").value.trim().replace(/\/$/,"");
+
+// Current state
+let currentClientId = "brightsmile-dental";
+let currentChannel  = "web";
+let sid = null;
+let busy = false;
+
+const ICONS = {search_web:"🔍",send_email:"📧",collect_patient_info:"🧠",get_booking_link:"📅",escalate_to_human:"🆘",check_opening_hours:"🕐",create_task:"✅"};
+const ICLS  = {search_web:"ic-search",send_email:"ic-email",collect_patient_info:"ic-memory",get_booking_link:"ic-booking",escalate_to_human:"ic-escalate",check_opening_hours:"ic-info",create_task:"ic-task"};
+
+function fmt(t){
+  return t.replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>").replace(/\*(.*?)\*/g,"<em>$1</em>")
+    .replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g,"<br>");
+}
+function now(){return new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});}
+
+// ── Health check ──────────────────────────────────────────────────────────
+async function checkHealth(){
+  const el=$("s-pill");el.className="checking";el.textContent="Checking…";
+  try{
+    const r=await fetch(api()+"/api/health",{signal:AbortSignal.timeout(4000)});
+    if(r.ok){const d=await r.json();el.className="online";el.textContent=`Online · ${d.ai||"ai"} ✓`;}
+    else{el.className="offline";el.textContent="Error";}
+  }catch{el.className="offline";el.textContent="Offline — start server";}
+}
+checkHealth();setInterval(checkHealth,30000);
+
+// ── Client switcher ───────────────────────────────────────────────────────
+function switchClient(id, assistantName, emoji, businessName, type){
+  currentClientId = id;
+  sid = null; // new session for new client
+  sessionStorage.removeItem("hai3");
+
+  // Update active button
+  document.querySelectorAll(".c-btn").forEach(b=>b.classList.remove("active"));
+  $("cbtn-"+id)?.classList.add("active");
+
+  // Update header
+  $("hdr-av").textContent = emoji;
+  $("hdr-name").textContent = `${assistantName} — ${businessName}`;
+  $("v-avatar").textContent = emoji;
+  $("v-name").textContent = assistantName;
+
+  // Clear chat
+  $("messages").innerHTML="";
+  $("qreplies").style.display="flex";
+  clearMemory();
+
+  // Greet for new client
+  setTimeout(()=>{
+    addMsg(`Hello! I'm **${assistantName}**, the AI assistant for **${businessName}** (${type}). 😊\n\nI can help you with appointments, services, pricing, general health questions, and more.\n\nHow can I help you today?`,"bot");
+  },200);
+
+  // Update voice
+  if(vState==="listening"||vState==="speaking"){vSynth.cancel();vSetState("idle");}
+  vStarted=false;
+}
+
+function addCustomClient(){
+  const id = prompt("Enter client ID (e.g. my-clinic):");
+  if(!id) return;
+  alert(`Create the file:\nclients/${id}.js\n\nCopy from clients/brightsmile-dental.js and edit.\nThen restart the server.`);
+}
+
+// ── Channel switching ─────────────────────────────────────────────────────
+function switchCh(ch){
+  currentChannel=ch;
+  $("btn-web").classList.toggle("active",ch==="web");
+  $("btn-voice").classList.toggle("active",ch==="voice");
+  $("view-web").style.display=ch==="web"?"flex":"none";
+  $("view-voice").style.display=ch==="voice"?"flex":"none";
+  if(ch==="voice") vOnActivate();
+}
+
+// ── Messages ──────────────────────────────────────────────────────────────
+function addMsg(text,role,tools=[]){
+  const box=$("messages");
+  const row=document.createElement("div");row.className="mrow "+role;
+  const b=document.createElement("div");b.className="bubble "+role;b.innerHTML=fmt(text);row.appendChild(b);
+  if(role==="bot"&&tools.length){
+    const tr=document.createElement("div");tr.className="tools-row";
+    tools.forEach(t=>{const tg=document.createElement("span");tg.className="ttag";tg.innerHTML=`${ICONS[t]||"⚙"} ${t.replace(/_/g," ")}`;tr.appendChild(tg);});
+    row.appendChild(tr);
+  }
+  box.appendChild(row);box.scrollTop=box.scrollHeight;
+}
+
+function showTyping(){if(busy)return;busy=true;const d=document.createElement("div");d.id="typ";d.className="typing-ind";d.innerHTML="<span></span><span></span><span></span>";$("messages").appendChild(d);$("messages").scrollTop=$("messages").scrollHeight;}
+function hideTyping(){busy=false;const e=$("typ");if(e)e.remove();}
+
+function updateMem(p){
+  if(!p)return;
+  const set=(id,v)=>{const e=$(id);if(!e)return;if(v!=null&&v!==""){e.textContent=v;e.className="mem-v set";}};
+  set("mm-name",p.name);set("mm-phone",p.phone);set("mm-email",p.email);
+  set("mm-new",p.isNewPatient===null?null:p.isNewPatient?"Yes":"No");
+  set("mm-concern",p.concern);set("mm-service",p.preferredService);
+}
+
+function clearMemory(){
+  ["mm-name","mm-phone","mm-email","mm-new","mm-concern","mm-service"].forEach(id=>{
+    const e=$(id);if(e){e.textContent="—";e.className="mem-v empty";}
+  });
+  $("act-log").innerHTML='<div class="act-item"><span class="act-icon ic-info">ℹ</span>Waiting…</div>';
+}
+
+function logAct(tools){
+  if(!tools||!tools.length)return;
+  const c=$("act-log");
+  if(c.querySelector(".ic-info"))c.innerHTML="";
+  tools.forEach(t=>{
+    const d=document.createElement("div");d.className="act-item";
+    d.innerHTML=`<span class="act-icon ${ICLS[t]||"ic-info"}">${ICONS[t]||"⚙"}</span><span>${t.replace(/_/g," ")}</span><span style="margin-left:auto;color:#94a3b8">${now()}</span>`;
+    c.insertBefore(d,c.firstChild);
+    while(c.children.length>10)c.removeChild(c.lastChild);
+  });
+}
+
+// ── Call agent ────────────────────────────────────────────────────────────
+async function callAgent(text){
+  const body={message:text,clientId:currentClientId};
+  if(sid)body.sessionId=sid;
+  const res=await fetch(api()+"/api/chat",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(body),signal:AbortSignal.timeout(25000),
+  });
+  const data=await res.json();
+  if(res.ok){
+    sid=data.sessionId;sessionStorage.setItem("hai3",sid);
+    updateMem(data.patient);logAct(data.toolsUsed);
+    return data;
+  }
+  throw new Error(data.error||"Unknown error");
+}
+
+// ── Send web message ──────────────────────────────────────────────────────
+async function sendMsg(text){
+  text=text.trim();if(!text||busy)return;
+  $("qreplies").style.display="none";
+  addMsg(text,"user");
+  $("msg-input").value="";$("msg-input").style.height="auto";
+  $("send-btn").disabled=true;showTyping();
+  try{const d=await callAgent(text);hideTyping();addMsg(d.response,"bot",d.toolsUsed||[]);}
+  catch(e){hideTyping();addMsg("I can't connect right now. Please try again.","bot");}
+  $("send-btn").disabled=false;$("msg-input").focus();
+}
+
+$("send-btn").addEventListener("click",()=>sendMsg($("msg-input").value));
+$("msg-input").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg(e.target.value);}});
+$("msg-input").addEventListener("input",e=>{
+  $("send-btn").disabled=!e.target.value.trim();
+  e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,100)+"px";
+});
+$("qreplies").addEventListener("click",e=>{const b=e.target.closest(".qr");if(b)sendMsg(b.dataset.msg);});
+
+// ════════════════════════════════════════
+// REAL VOICE ASSISTANT
+// ════════════════════════════════════════
+const SpeechRec=window.SpeechRecognition||window.webkitSpeechRecognition;
+const vSynth=window.speechSynthesis;
+let vVoice=null,vRec=null,vState="idle",vMuted=false,vAutoTimer=null,vMicAllowed=false,vStarted=false;
+
+function vLoadVoices(){
+  const vs=vSynth.getVoices();
+  vVoice=vs.find(v=>v.lang==="en-GB"&&/amy|serena|kate|female|woman/i.test(v.name))||vs.find(v=>v.lang==="en-GB")||vs.find(v=>v.lang.startsWith("en")&&/female|woman/i.test(v.name))||vs.find(v=>v.lang.startsWith("en"))||null;
+}
+vLoadVoices();
+if(vSynth.onvoiceschanged!==undefined)vSynth.onvoiceschanged=vLoadVoices;
+
+function vSetState(st){
+  vState=st;
+  const badge=$("v-badge"),rings=$("v-rings"),bars=$("v-bars"),btn=$("v-mic-btn"),lbl=$("v-mic-lbl");
+  badge.className="v-badge-st "+st;rings.className="v-rings "+st;
+  const m={idle:{t:"Ready",b:false,c:"ready",i:"🎤",l:"Tap to speak"},listening:{t:"Listening…",b:false,c:"active",i:"🛑",l:"Tap to stop"},thinking:{t:"Thinking…",b:false,c:"busy",i:"⏳",l:"Please wait"},speaking:{t:"Speaking",b:true,c:"ready",i:"🎤",l:"Tap to interrupt"}}[st]||{t:"Ready",b:false,c:"ready",i:"🎤",l:"Tap to speak"};
+  badge.textContent=m.t;bars.classList.toggle("on",m.b);btn.className="v-mic-btn "+m.c;btn.textContent=m.i;lbl.textContent=m.l;
+}
+
+function vShowTx(who,text,dim=false){$("v-tx-who").textContent=who.toUpperCase();const el=$("v-tx-text");el.className="v-tx-text"+(dim?" dim":"");el.textContent=text;}
+
+function vClean(t){return t.replace(/\*\*(.*?)\*\*/g,"$1").replace(/\*(.*?)\*/g,"$1").replace(/[📅📞📧⚠️💙🦷✨😁🔍👤✅🧠🕐📍⚙️🏥🏨]/g,"").replace(/https?:\/\/[^\s]+/g,"the booking link").replace(/•\s*/g,"").replace(/\n+/g,". ").replace(/\s{2,}/g," ").trim();}
+
+function vSpeak(text,onDone){
+  vSynth.cancel();vSetState("speaking");vShowTx("Aria",text);
+  const sentences=text.replace(/([.!?])\s+/g,"$1|||").split("|||").map(s=>s.trim()).filter(s=>s.length>0);
+  let i=0;
+  function next(){
+    if(i>=sentences.length){vSetState("idle");if(onDone)onDone();return;}
+    const s=vClean(sentences[i++]);if(!s){next();return;}
+    const u=new SpeechSynthesisUtterance(s);
+    if(vVoice)u.voice=vVoice;u.lang="en-GB";u.rate=0.88;u.pitch=1.06;u.volume=1;
+    u.onend=()=>setTimeout(next,150+Math.random()*150);u.onerror=()=>next();
+    vSynth.speak(u);
+  }
+  next();
+}
+
+async function vRequestMic(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    stream.getTracks().forEach(t=>t.stop());
+    vMicAllowed=true;$("v-perm").style.display="none";vStartListening();
+  }catch{
+    vShowTx("Aria","Microphone blocked. Click the 🔒 in your browser address bar → Allow microphone → refresh.",true);
+    $("v-badge").textContent="Mic blocked";$("v-badge").className="v-badge-st error";
+  }
+}
+
+function vStartListening(){
+  if(!SpeechRec||vState==="listening"||vState==="thinking")return;
+  if(vState==="speaking")vSynth.cancel();
+  clearTimeout(vAutoTimer);
+  vRec=new SpeechRec();vRec.lang="en-GB";vRec.continuous=false;vRec.interimResults=true;vRec.maxAlternatives=1;
+  let final="";
+  vRec.onstart=()=>{vSetState("listening");vShowTx("You","Listening… speak now",true);};
+  vRec.onresult=(e)=>{final="";let interim="";for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)final+=t;else interim+=t;}vShowTx("You",final||interim,!final);};
+  vRec.onerror=(e)=>{
+    vSetState("idle");
+    if(e.error==="not-allowed"||e.error==="service-not-allowed"){$("v-perm").style.display="flex";}
+    else if(e.error==="no-speech"){vShowTx("Aria","Didn't hear anything — tap mic and try again.",true);}
+    else{vShowTx("Aria","Speech error: "+e.error,true);}
+  };
+  vRec.onend=async()=>{
+    if(final.trim()&&vState!=="thinking"){
+      vShowTx("You",final);
+      updateMem({});// will update after agent responds
+      await vSendToAgent(final);
+    }else if(vState==="listening")vSetState("idle");
+  };
+  try{vRec.start();}catch(e){vSetState("idle");vShowTx("Aria","Could not start mic: "+e.message,true);}
+}
+
+function vStopListening(){if(vRec&&vState==="listening"){vRec.stop();vSetState("idle");}}
+
+async function vSendToAgent(text){
+  vSetState("thinking");
+  await new Promise(r=>setTimeout(r,350+Math.random()*400));
+  try{
+    const d=await callAgent(text);
+    if(d&&d.response){
+      vSpeak(d.response,()=>{vAutoTimer=setTimeout(()=>{if(vState==="idle")vStartListening();},900);});
+    }else{vSpeak("I'm having a technical issue. Please call us directly.",()=>vSetState("idle"));}
+  }catch{vSpeak("Sorry, connection lost. Please call us directly.",()=>vSetState("idle"));}
+}
+
+async function vHandleMic(){
+  if(vState==="speaking"){vSynth.cancel();vSetState("idle");clearTimeout(vAutoTimer);setTimeout(()=>vStartListening(),200);return;}
+  if(vState==="listening"){vStopListening();return;}
+  if(vState==="thinking")return;
+  try{const p=await navigator.permissions.query({name:"microphone"});if(p.state==="granted")vMicAllowed=true;if(p.state==="denied"){$("v-perm").style.display="flex";return;}}catch{}
+  if(!vMicAllowed){$("v-perm").style.display="flex";return;}
+  vStartListening();
+}
+
+function vOnActivate(){
+  if(vStarted)return;vStarted=true;
+  navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+    stream.getTracks().forEach(t=>t.stop());vMicAllowed=true;$("v-perm").style.display="none";
+    const name=$("v-name").textContent||"Aria";
+    const biz=$("hdr-name").textContent?.split(" — ")[1]||"our clinic";
+    setTimeout(()=>vSpeak(`Hello! Thank you for calling ${biz}. My name is ${name}. How can I help you today?`,()=>{
+      vAutoTimer=setTimeout(()=>{if(vState==="idle")vStartListening();},700);
+    }),400);
+  }).catch(()=>{$("v-perm").style.display="flex";});
+}
+
+document.addEventListener("keydown",(e)=>{
+  if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;
+  if(currentChannel==="voice"){
+    if(e.code==="Space"){e.preventDefault();vHandleMic();}
+    if(e.code==="Escape"){vStopListening();vSynth.cancel();vSetState("idle");}
+  }
+});
+
+// ── Initial greeting ──────────────────────────────────────────────────────
+setTimeout(()=>{
+  addMsg("Hello! I'm **Aria**, the AI agent for **Bright Smile Dental**. 😊\n\nI can help with appointments, services, general health questions, and more.\n\nSwitch clients above to see me work for a **GP surgery** or **private hospital** too.\n\nHow can I help you today?","bot");
+},400);
+</script>
+</body>
+</html>
