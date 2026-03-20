@@ -245,9 +245,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
 <script>
 // ── PRODUCTION CONFIG ──────────────────────────────────────────────────────
 const API_URL = "https://healthai-saas-production.up.railway.app";
-const api = () => API_URL;
-
 const $ = id => document.getElementById(id);
+const api = () => "https://healthai-saas-production.up.railway.app";
 let currentClientId = "brightsmile-dental";
 let currentChannel  = "web";
 let sid = sessionStorage.getItem("hai3") || null;
