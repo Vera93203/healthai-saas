@@ -122,7 +122,7 @@ async function runAgent(sessionId, message, client, channel = "web") {
     };
 
   } catch (err) {
-    console.error("[AGENT ERROR]", err.message, err.status || "", err.code || "");
+    console.error("[AGENT ERROR]", err.message);
     const fallback = `I'm having a technical issue. Please call us on ${client.contact?.phone || "reception"} and our team will help you straight away.`;
     addToHistory(session.id, "assistant", fallback);
     return { text: fallback, toolsUsed, sessionId: session.id, error: err.message, latencyMs: Date.now() - startTime };

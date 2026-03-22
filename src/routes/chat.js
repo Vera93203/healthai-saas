@@ -5,12 +5,7 @@ const router = express.Router();
 const { runAgent } = require("../agents/coreAgent");
 const { loadClient } = require("../config/clientLoader");
 
-// Fix for Railway proxy
-const limiter = rateLimit({
-  windowMs: 60*1000,
-  max: 30,
-  validate: { xForwardedForHeader: false }
-});
+const limiter = rateLimit({ windowMs: 60*1000, max: 30 });
 
 function validate(req, res, next) {
   const { message, clientId } = req.body;
@@ -18,6 +13,7 @@ function validate(req, res, next) {
     return res.status(400).json({ error: "Message required." });
   if (message.length > 1500)
     return res.status(400).json({ error: "Message too long." });
+  // Accept clientId or clinicId
   const id = clientId || req.body.clinicId;
   if (!id || !/^[a-z0-9-]+$/.test(id))
     return res.status(400).json({ error: "Valid clientId required." });
@@ -26,6 +22,7 @@ function validate(req, res, next) {
   next();
 }
 
+// POST /api/chat
 router.post("/chat", limiter, validate, async (req, res) => {
   const { message, sessionId, clientId } = req.body;
   const client = loadClient(clientId);
@@ -39,6 +36,7 @@ router.post("/chat", limiter, validate, async (req, res) => {
   }
 });
 
+// GET /api/client/:id
 router.get("/client/:clientId", (req, res) => {
   const client = loadClient(req.params.clientId);
   if (!client) return res.status(404).json({ error: "Client not found." });
@@ -53,6 +51,7 @@ router.get("/client/:clientId", (req, res) => {
   });
 });
 
+// GET /api/health
 router.get("/health", (req, res) => {
   const hasGroq = !!(process.env.GROQ_API_KEY && !process.env.GROQ_API_KEY.includes("your_"));
   const hasOpenAI = !!process.env.OPENAI_API_KEY;

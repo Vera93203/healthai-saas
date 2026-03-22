@@ -8,11 +8,9 @@ const chatRoutes = require("./src/routes/chat");
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// Required for Railway/Heroku/any proxy — fixes rate limiter error
-app.set("trust proxy", 1);
-
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: "*", methods: ["GET","POST"] }));
+const origins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : ["*"];
+app.use(cors({ origin: origins, methods: ["GET","POST"] }));
 app.use(express.json({ limit: "15kb" }));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/api", chatRoutes);
