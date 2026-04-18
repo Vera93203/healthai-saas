@@ -418,7 +418,7 @@ async function checkHealth(){
   const el=$("s-pill");el.className="checking";el.textContent="Checking…";
   try{
     const r=await fetch(api()+"/api/health",{signal:AbortSignal.timeout(4000)});
-    if(r.ok){const d=await r.json();el.className="online";el.textContent=`Online · ${d.ai||"ai"} ✓`;}
+    if(r.ok){el.className="online";el.textContent="Online";}
     else{el.className="offline";el.textContent="Error";}
   }catch{el.className="offline";el.textContent="Offline — start server";}
 }
