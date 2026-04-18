@@ -9,15 +9,49 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(helmet({ contentSecurityPolicy: false }));
-const origins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : ["*"];
-app.use(cors({ origin: origins, methods: ["GET","POST"] }));
+
+/** CORS: merge Railway / Vercel public hostnames so the browser UI can call the API from production. */
+function buildCorsOrigin() {
+  const parts = (process.env.ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (parts.includes("*")) return "*";
+  if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+    parts.push(`https://${process.env.RAILWAY_PUBLIC_DOMAIN}`);
+  }
+  if (process.env.VERCEL_URL) {
+    parts.push(`https://${process.env.VERCEL_URL}`);
+  }
+  if (process.env.CORS_EXTRA_ORIGINS) {
+    process.env.CORS_EXTRA_ORIGINS.split(",").forEach((s) => {
+      const t = s.trim();
+      if (t) parts.push(t);
+    });
+  }
+  const unique = [...new Set(parts)];
+  if (unique.length === 0) return "*";
+  return (origin, callback) => {
+    if (!origin) return callback(null, true);
+    callback(null, unique.includes(origin));
+  };
+}
+
+const corsOrigin = buildCorsOrigin();
+app.use(
+  cors(
+    typeof corsOrigin === "function"
+      ? { origin: corsOrigin, methods: ["GET", "POST"] }
+      : { origin: corsOrigin, methods: ["GET", "POST"] }
+  )
+);
 app.use(express.json({ limit: "15kb" }));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/api", chatRoutes);
 app.use((req, res) => res.status(404).json({ error: "Not found." }));
 app.use((err, req, res, next) => res.status(500).json({ error: "Internal error." }));
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   const hasGroq   = !!(process.env.GROQ_API_KEY   && !process.env.GROQ_API_KEY.includes("your_"));
   const hasOpenAI = !!(process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.includes("your_"));
   const hasEmail  = !!(process.env.EMAIL_USER      && !process.env.EMAIL_USER.includes("your@"));
@@ -38,6 +72,15 @@ app.listen(PORT, () => {
 ║           london-private-hospital                ║
 ╚══════════════════════════════════════════════════╝
   `);
+});
+
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`Port ${PORT} is already in use. Try: PORT=3001 npm start`);
+  } else {
+    console.error(err);
+  }
+  process.exit(1);
 });
 
 module.exports = app;

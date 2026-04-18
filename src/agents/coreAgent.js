@@ -16,22 +16,42 @@ function getAIClient() {
     const Groq = require("groq-sdk");
     return { client: new Groq({ apiKey: process.env.GROQ_API_KEY }), provider: "groq" };
   }
-  if (process.env.OPENAI_API_KEY) {
+  if (process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.includes("your_")) {
     const OpenAI = require("openai");
     return { client: new OpenAI({ apiKey: process.env.OPENAI_API_KEY }), provider: "openai" };
   }
   throw new Error("No AI API key found. Add GROQ_API_KEY or OPENAI_API_KEY to .env");
 }
 
-const { client: ai, provider } = getAIClient();
-console.log(`[AI] Using ${provider.toUpperCase()}`);
+let aiClientCache = null;
+let loggedProvider = false;
+
+function getAIClientLazy() {
+  if (aiClientCache) return aiClientCache;
+  aiClientCache = getAIClient();
+  if (!loggedProvider) {
+    console.log(`[AI] Using ${aiClientCache.provider.toUpperCase()}`);
+    loggedProvider = true;
+  }
+  return aiClientCache;
+}
+
+/** Groq does not host OpenAI model IDs; swap to a Groq-compatible model when needed. */
+function resolveModel(client, provider) {
+  const configured = client.ai?.model || "gpt-4o-mini";
+  if (provider !== "groq") return configured;
+  const groqExplicit = client.ai?.groqModel || process.env.GROQ_MODEL;
+  if (groqExplicit) return groqExplicit;
+  if (/^(gpt-|o\d|chatgpt)/i.test(configured)) return "llama-3.3-70b-versatile";
+  return configured;
+}
 
 async function runAgent(sessionId, message, client, channel = "web") {
   const session = getSession(sessionId, client.clientId || client.clinicId);
   session.channel = channel;
   const startTime = Date.now();
 
-  // ── Safety Check ──────────────────────────────────────────────────────────
+  // ── Safety Check (no API keys required) ─────────────────────────────────
   const safety = safetyCheck(message, client, session);
   if (safety.blocked) {
     addToHistory(session.id, "user", message);
@@ -45,6 +65,26 @@ async function runAgent(sessionId, message, client, channel = "web") {
     };
   }
 
+  let ai;
+  let provider;
+  try {
+    ({ client: ai, provider } = getAIClientLazy());
+  } catch {
+    const msg =
+      "The assistant is not configured yet. Please add a valid GROQ_API_KEY or OPENAI_API_KEY on the server.";
+    addToHistory(session.id, "user", message);
+    addToHistory(session.id, "assistant", msg);
+    return {
+      text: msg,
+      toolsUsed: [],
+      sessionId: session.id,
+      latencyMs: Date.now() - startTime,
+      patient: session.patient,
+    };
+  }
+
+  const model = resolveModel(client, provider);
+
   addToHistory(session.id, "user", message);
 
   const systemPrompt = buildSystemPrompt(client, session);
@@ -55,7 +95,6 @@ async function runAgent(sessionId, message, client, channel = "web") {
 
   let toolsUsed = [];
   let finalText = "";
-  const model = client.ai?.model || "gpt-4o-mini";
 
   try {
     // ── First AI call — decide which tools to use ─────────────────────────

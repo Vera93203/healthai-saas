@@ -7,8 +7,10 @@ function getSession(sessionId, clientId) {
     s.lastActiveAt = Date.now();
     return s;
   }
+  const id =
+    sessionId && typeof sessionId === "string" && sessionId.length <= 80 ? sessionId : uuidv4();
   const s = {
-    id: uuidv4(), clientId,
+    id, clientId,
     createdAt: Date.now(), lastActiveAt: Date.now(),
     turnCount: 0, history: [],
     patient: { name:null, firstName:null, phone:null, email:null, isNewPatient:null, preferredService:null, preferredTime:null, concern:null },

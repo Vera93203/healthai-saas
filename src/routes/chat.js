@@ -54,7 +54,7 @@ router.get("/client/:clientId", (req, res) => {
 // GET /api/health
 router.get("/health", (req, res) => {
   const hasGroq = !!(process.env.GROQ_API_KEY && !process.env.GROQ_API_KEY.includes("your_"));
-  const hasOpenAI = !!process.env.OPENAI_API_KEY;
+  const hasOpenAI = !!(process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.includes("your_"));
   res.json({
     status: "ok", version: "3.0.0",
     ai: hasGroq ? "groq" : hasOpenAI ? "openai" : "missing",
