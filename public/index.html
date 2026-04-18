@@ -30,6 +30,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .cfg-input::placeholder{color:rgba(255,255,255,.4)}
 #s-pill{font-size:10px;font-weight:600;padding:6px 10px;border-radius:20px;display:flex;align-items:center;gap:5px;white-space:nowrap;max-width:min(42vw,200px);overflow:hidden;text-overflow:ellipsis}
 .topbar .recheck-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:8px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;min-height:40px;-webkit-tap-highlight-color:transparent}
+.topbar-gear{width:40px;height:40px;padding:0;border:1px solid rgba(255,255,255,.18);border-radius:10px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.75);font-size:16px;line-height:1;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.topbar-gear:hover{background:rgba(255,255,255,.12);color:#fff}
+.topbar-gear[aria-expanded="true"]{background:rgba(87,197,182,.2);border-color:rgba(87,197,182,.45);color:#a7f3d0}
+.topbar-dev-panel{display:none;flex:1 1 100%;flex-wrap:wrap;align-items:center;gap:8px 10px;padding-top:10px;margin-top:2px;border-top:1px solid rgba(255,255,255,.12)}
+.topbar.has-dev-open .topbar-dev-panel{display:flex}
+.topbar-dev-hint{width:100%;font-size:11px;color:rgba(255,255,255,.45);line-height:1.35;margin:0;padding:0 2px}
 #s-pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
 #s-pill.online{background:#d1fae5;color:#065f46}
 #s-pill.offline{background:#fee2e2;color:#991b1b}
@@ -241,19 +247,23 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 /* ── High contrast (Windows / some Android) ─────────────────────────────── */
 @media(prefers-contrast:more){
   .bubble.bot{border-width:2px}
-  .cfg-input,.recheck-btn{border-width:2px}
+  .topbar-dev-panel .cfg-input,.recheck-btn,.topbar-gear{border-width:2px}
 }
 </style>
 </head>
 <body>
 
-<div class="topbar">
+<div class="topbar" id="topbar">
   <div class="topbar-logo">🏥 HealthAI SaaS <span class="v-badge">v3.0</span></div>
   <div class="topbar-right">
-    <span class="cfg-label">API:</span>
-    <input class="cfg-input" id="api-url" value="" placeholder="same as this page" title="Leave empty to use this site’s origin (recommended on Railway). Or set your server URL, e.g. http://localhost:3000" inputmode="url" autocomplete="url"/>
     <div id="s-pill" class="checking">Checking…</div>
     <button type="button" class="recheck-btn" onclick="checkHealth()">Recheck</button>
+    <button type="button" class="topbar-gear" id="dev-tools-toggle" aria-label="Connection settings (developers)" aria-expanded="false" aria-controls="topbar-dev-panel" title="Only needed if the API is on another address. Leave blank for normal use.">⚙</button>
+  </div>
+  <div class="topbar-dev-panel" id="topbar-dev-panel" role="region" aria-label="API connection">
+    <span class="cfg-label">API base URL</span>
+    <input class="cfg-input" id="api-url" value="" placeholder="Leave empty — use this site" title="Optional. Leave empty so chat uses this website’s address. Set a URL only if the backend is hosted elsewhere (e.g. http://localhost:3000)." inputmode="url" autocomplete="url"/>
+    <p class="topbar-dev-hint">Patients and staff can ignore this. For developers: set a custom server only when the API is not on the same site.</p>
   </div>
 </div>
 
@@ -365,6 +375,22 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
 <script>
 const $ = id => document.getElementById(id);
+
+(function initTopbarDevTools() {
+  const bar = $("topbar");
+  const btn = $("dev-tools-toggle");
+  if (!bar || !btn) return;
+  function setOpen(open) {
+    bar.classList.toggle("has-dev-open", !!open);
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  try {
+    const q = new URLSearchParams(window.location.search).get("dev");
+    if (q === "1" || q === "true") setOpen(true);
+  } catch (_) {}
+  btn.addEventListener("click", () => setOpen(!bar.classList.contains("has-dev-open")));
+})();
+
 function api() {
   const raw = $("api-url").value.trim().replace(/\/$/, "");
   if (raw) return raw;
