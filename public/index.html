@@ -140,11 +140,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
 /* VOICE */
 .voice-wrap{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f3d52,#1a5f7a);gap:clamp(12px,3vw,20px);padding:calc(52px + env(safe-area-inset-top,0px)) 16px calc(20px + env(safe-area-inset-bottom,0px));overflow:auto;position:relative;min-height:0}
-.voice-topnav{position:absolute;top:0;left:0;right:0;z-index:25;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:max(8px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 10px max(12px,env(safe-area-inset-left,0px));background:linear-gradient(180deg,rgba(10,20,36,.94) 0%,rgba(10,20,36,.5) 70%,transparent 100%);flex-wrap:wrap}
-.v-back-web{appearance:none;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.1);color:#fff;font-size:14px;font-weight:600;padding:10px 16px;border-radius:999px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;min-height:44px}
-.v-back-web:active{background:rgba(255,255,255,.2)}
-.v-perm-skip{margin-top:8px;background:transparent;border:none;color:rgba(255,255,255,.65);font-size:14px;font-weight:500;text-decoration:underline;cursor:pointer;padding:12px 16px;font-family:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation;min-height:44px}
-.v-perm-skip:active{color:#fff}
+.voice-topnav{position:absolute;top:0;left:0;right:0;z-index:25;display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:max(8px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 10px max(12px,env(safe-area-inset-left,0px));background:linear-gradient(180deg,rgba(10,20,36,.94) 0%,rgba(10,20,36,.5) 70%,transparent 100%);flex-wrap:wrap}
 .v-rings{position:relative;width:150px;height:150px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .v-ring{position:absolute;border-radius:50%;border:1.5px solid transparent;opacity:0}
 .v-r1{width:110px;height:110px}.v-r2{width:134px;height:134px}.v-r3{width:150px;height:150px}
@@ -357,14 +353,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
   <!-- VOICE -->
   <div class="voice-wrap" id="view-voice">
     <div class="voice-topnav">
-      <button type="button" class="v-back-web" id="v-back-web" onclick="switchCh('web')" aria-label="Back to text chat">← Text chat</button>
+      <button type="button" class="mobile-sb-toggle" id="voice-sb-toggle" aria-label="Open channels, memory, and activity" aria-expanded="false" aria-controls="sidebar">☰</button>
     </div>
     <div class="v-perm" id="v-perm">
       <div style="font-size:44px">🎤</div>
       <div style="font-size:16px;font-weight:600;color:#fff">Allow Microphone</div>
       <div style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.7">Click below then Allow in Chrome.<br/>Requires Google Chrome.</div>
       <button type="button" class="v-perm-btn" onclick="vRequestMic()">Allow Microphone</button>
-      <button type="button" class="v-perm-skip" onclick="switchCh('web')">← Use text chat instead</button>
     </div>
     <div class="v-rings" id="v-rings">
       <div class="v-ring v-r1"></div><div class="v-ring v-r2"></div><div class="v-ring v-r3"></div>
@@ -441,24 +436,40 @@ async function checkHealth(){
 }
 checkHealth();setInterval(checkHealth,30000);
 
-// Mobile sidebar drawer (≤900px)
-(()=>{
+function syncDrawerToggles(open) {
+  ["mobile-sb-toggle", "voice-sb-toggle"].forEach((id) => {
+    const el = $(id);
+    if (el) el.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+}
+
+function setMobileDrawer(open) {
+  const main = $("main-layout");
+  if (!main) return;
+  main.classList.toggle("panel-open", !!open);
+  document.body.style.overflow = open ? "hidden" : "";
+  syncDrawerToggles(!!open);
+}
+
+// Mobile sidebar drawer (≤900px) — hamburger in web chat + voice
+(() => {
   const main = $("main-layout");
   const backdrop = $("drawer-backdrop");
-  const toggle = $("mobile-sb-toggle");
-  if (!main || !backdrop || !toggle) return;
-  function setDrawer(open) {
-    main.classList.toggle("panel-open", !!open);
-    toggle.setAttribute("aria-expanded", open ? "true" : "false");
-    document.body.style.overflow = open ? "hidden" : "";
+  const tWeb = $("mobile-sb-toggle");
+  const tVoice = $("voice-sb-toggle");
+  if (!main || !backdrop) return;
+  function bind(btn) {
+    if (!btn) return;
+    btn.addEventListener("click", () => setMobileDrawer(!main.classList.contains("panel-open")));
   }
-  toggle.addEventListener("click", () => setDrawer(!main.classList.contains("panel-open")));
-  backdrop.addEventListener("click", () => setDrawer(false));
+  bind(tWeb);
+  bind(tVoice);
+  backdrop.addEventListener("click", () => setMobileDrawer(false));
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") setDrawer(false);
+    if (e.key === "Escape") setMobileDrawer(false);
   });
   window.addEventListener("resize", () => {
-    if (window.innerWidth > 900) setDrawer(false);
+    if (window.innerWidth > 900) setMobileDrawer(false);
   });
 })();
 
@@ -468,8 +479,7 @@ function closeMobileDrawer() {
   if (m) {
     m.classList.remove("panel-open");
     document.body.style.overflow = "";
-    const t = $("mobile-sb-toggle");
-    if (t) t.setAttribute("aria-expanded", "false");
+    syncDrawerToggles(false);
   }
 }
 
